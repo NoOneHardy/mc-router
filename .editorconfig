@@ -1,0 +1,8 @@
+root = true
+
+[*]
+indent_size = 2
+
+[*.ts]
+ij_typescript_use_double_quotes = false
+ij_typescript_use_semicolon_after_statement = false
