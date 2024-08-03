@@ -1,24 +1,23 @@
-import * as http from 'http'
+import {ApiImpl} from './api-impl'
+import {Container} from './container'
 
-// axios.get('/container/json', {
-//   socketPath: '//./pipe/docker_engine'
-// }).then((response: object) => {
-//   console.log(response)
-// })
 
-const request = http.request({
+Container.create('test', 'docker.no1hardy.ch/minecraft-server:1.21-fabric').then(container => {
+  if (container instanceof Container) {
+    console.log('Successful')
+  }
+})
+
+const url = 'http://localhost/containers/720736bad7ec/attach?stream=true&stdout=true&stdin=true'
+const options = {
   headers: {
     'Connection': 'Upgrade',
     'Upgrade': 'tcp'
-  },
-  socketPath: '//./pipe/docker_engine',
-  method: 'POST',
-  path: 'http://localhost/containers/720736bad7ec/attach?stream=true&stdout=true&stdin=true',
-})
+  }
+}
+const request = ApiImpl.post(url, options)
 
-request.end()
-
-request.on('upgrade', (response, socket: NodeJS.ReadWriteStream) => {
+request.on('upgrade', (_, socket: NodeJS.ReadWriteStream) => {
   socket.on('data', data => {
     console.log(data.toString().slice(0, data.toString().length - 2))
     if (data.toString().includes('?test')) test()

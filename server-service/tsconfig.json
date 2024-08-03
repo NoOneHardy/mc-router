@@ -6,7 +6,7 @@
     "preserveConstEnums": true,
     "outDir": "./dist",
     "noUnusedLocals": true,
-//    "noUnusedParameters": true
+    "noUnusedParameters": true
   },
   "include": [
     "./src/**/*.ts"
