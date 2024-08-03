@@ -5,6 +5,7 @@ import {PacketHandler} from './protocol/packets/packet-handler'
 import {Handshake} from './protocol/packets/server-bound/handshake.packet'
 import {Packet} from './protocol/packets/packet'
 import {config, ProxyRoute} from './config'
+import {DisconnectBuilder} from './protocol/packets/client-bound/disconnect.packet'
 
 export class Connection {
   private playerSocket: Socket
@@ -67,6 +68,8 @@ export class Connection {
 
     this.state = packet.nextState
 
+    if (!this.connectServerSocket(packet.serverAddress)) return
+
     console.log(`Connection to ${packet.serverAddress}`)
 
     // this.serverSocket.write(psData.slice(0, packet.totalLength))
@@ -76,15 +79,15 @@ export class Connection {
     this.proxyRoute = config.serverList.get(domain)
     if (!this.proxyRoute) {
       this.closeConnection(`${domain} existiert nicht`)
-      return
+      return false
     }
   }
 
   closeConnection(errorMessage?: string) {
     console.log(`Closing connection with ${this.playerSocket.remoteAddress.slice(7)}`)
     if (errorMessage) {
-      // const disconnectPacket = DisconnectBuilder.error(errorMessage).toBuffer()
-      // this.playerSocket.write()
+      const disconnectPacket = DisconnectBuilder.error(errorMessage).toBuffer()
+      this.playerSocket.write(disconnectPacket)
     }
 
     if (this.playerSocket.writable) this.playerSocket.end()

@@ -10,6 +10,7 @@ class Config {
   serverList = new Map<string, ProxyRoute>()
 
   constructor() {
+    this.loadFromFile()
   }
 
   loadFromFile(): void {

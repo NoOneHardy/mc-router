@@ -1,29 +1,13 @@
 {
   "name": "mc-router",
   "version": "1.0.0",
-  "description": "Router for minecraft servers according to domains",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/NoOneHardy/mc-router.git"
-  },
+  "description": "Hi\r This is a router for minecraft servers, so you can redirect clients to specific servers \r depending on the domain they are using to access the server.  \r I am new to the concept of Buffers in node.js, so I'm reusing code of a similar project by Minekloud.",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint src --fix"
   },
   "author": "NoOneHardy",
   "license": "ISC",
   "devDependencies": {
-    "@eslint/js": "^9.8.0",
-    "@types/node": "^20.14.11",
-    "@types/varint": "^6.0.3",
-    "eslint": "^9.8.0",
-    "globals": "^15.9.0",
-    "typescript": "^5.5.3",
     "typescript-eslint": "^7.2.0"
-  },
-  "dependencies": {
-    "varint": "^6.0.0"
   }
 }

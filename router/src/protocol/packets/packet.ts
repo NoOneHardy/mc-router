@@ -1,4 +1,5 @@
-import { encodingLength } from 'varint'
+import {encodingLength} from 'varint'
+import {BufferWrapper} from '../utils/buffer-wrapper'
 
 export abstract class Packet {
   abstract id: number
@@ -28,4 +29,15 @@ export abstract class Packet {
   // protected longLength(): number {
   //   return 4
   // }
+
+  protected initBuffer() {
+    const buffer = new BufferWrapper(Buffer.alloc(this.totalLength))
+    this.writeHeaders(buffer)
+    return buffer
+  }
+
+  protected writeHeaders(buff: BufferWrapper) {
+    buff.writeVarInt(this.length)
+    buff.writeVarInt(this.id)
+  }
 }
