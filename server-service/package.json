@@ -1,0 +1,27 @@
+{
+  "name": "server-service",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NoOneHardy/mc-router.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src --fix"
+  },
+  "author": "NoOneHardy",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^8.57.0",
+    "@types/dockerode": "^3.3.31",
+    "@types/node": "^22.1.0",
+    "@types/varint": "^6.0.3",
+    "eslint": "^8.57.0",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^7.2.0"
+  }
+}
