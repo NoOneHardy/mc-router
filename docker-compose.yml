@@ -1,0 +1,9 @@
+services:
+  server-service:
+    image: node:slim
+    volumes:
+      - ./server-service:/app
+    tty: true
+    stdin_open: true
+    working_dir: /app
+    command: bash
