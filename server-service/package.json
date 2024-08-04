@@ -12,8 +12,12 @@
   },
   "author": "NoOneHardy",
   "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2"
+  },
   "devDependencies": {
     "@types/node": "^22.1.0",
+    "@types/express": "^4.17.21",
     "typescript": "^5.5.4"
   }
 }
