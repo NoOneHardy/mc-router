@@ -1,6 +1,7 @@
 [
   {
     "domain": "test.ch",
-    "ip": "localhost"
+    "ip": "localhost",
+    "port": "25000"
   }
 ]

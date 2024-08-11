@@ -26,9 +26,9 @@ export abstract class Packet {
     return 2
   }
 
-  // protected longLength(): number {
-  //   return 4
-  // }
+  protected longLength(): number {
+    return 4
+  }
 
   protected initBuffer() {
     const buffer = new BufferWrapper(Buffer.alloc(this.totalLength))

@@ -4,10 +4,13 @@
   "description": "Hi\r This is a router for minecraft servers, so you can redirect clients to specific servers \r depending on the domain they are using to access the server.  \r I am new to the concept of Buffers in node.js, so I'm reusing code of a similar project by Minekloud.",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint ."
   },
   "author": "NoOneHardy",
   "license": "ISC",
   "devDependencies": {
-    "typescript-eslint": "^7.2.0"
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "eslint": "^8.57.0"
   }
 }

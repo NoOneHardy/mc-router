@@ -20,6 +20,24 @@ export class BufferWrapper {
 
   readVarInt(): number {
     try {
+      // let value = 0
+      // let byteLength = 0
+      // let currentByte= this._buffer[this._readOffset + byteLength]
+      //
+      // while (!currentByte || (currentByte & 0x80) != 0) {
+      //   currentByte = this._buffer[this._readOffset + byteLength]
+      //   console.log('Byte: ' + currentByte)
+      //   value |= (currentByte & 0x7F) << byteLength
+      //
+      //   byteLength += 7
+      //
+      //   console.log(value)
+      //   if ((currentByte & 0x80) != 0x80) break
+      // }
+      //
+      // this._readOffset += encodingLength(value)
+      //
+      // return value
       const varInt = decode(this._buffer, this._readOffset)
       this._readOffset += encodingLength(varInt)
       return varInt
@@ -41,24 +59,22 @@ export class BufferWrapper {
     return short
   }
 
+  readLong(): bigint {
+    const long = this._buffer.readBigInt64BE(this._readOffset)
+    this._readOffset += 4
+    return long
+  }
+
   writeVarInt(varInt: number) {
-    try {
-      encode(varInt, this._buffer, this._writeOffset)
-      this._writeOffset += encodingLength(varInt)
-    } catch (e) {
-      throw e
-    }
+    encode(varInt, this._buffer, this._writeOffset)
+    this._writeOffset += encodingLength(varInt)
   }
 
   writeString(string: string) {
-    try {
-      // Write string length
-      this.writeVarInt(string.length)
+    // Write string length
+    this.writeVarInt(string.length)
 
-      this._buffer.write(string, this._writeOffset, 'utf-8')
-      this._writeOffset += Buffer.byteLength(string)
-    } catch (e) {
-      throw e
-    }
+    this._buffer.write(string, this._writeOffset, 'utf-8')
+    this._writeOffset += Buffer.byteLength(string)
   }
 }

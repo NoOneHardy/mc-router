@@ -14,12 +14,15 @@ class Config {
   }
 
   loadFromFile(): void {
-    const rawConfig = readFileSync('config.json', 'utf-8')
+    const rawConfig = readFileSync('../config.json', 'utf-8')
     this.addRoutes(JSON.parse(rawConfig))
   }
 
   addRoutes(routes: ProxyRoute[]): void {
+    const locals = ['localhost', '::1', '127.0.0.1']
     routes.forEach(route => {
+      if (locals.includes(route.domain) && !route.port) return
+
       this.serverList.set(route.domain, {
         ...route,
         port: route.port || 25565
