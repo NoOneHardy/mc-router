@@ -32,8 +32,6 @@ export class Disconnect extends Packet {
 }
 
 export class DisconnectBuilder extends PacketBuilder<Disconnect> {
-  static instance = new DisconnectBuilder()
-
   fromBuffer(buff: BufferWrapper): Disconnect {
     return new Disconnect(buff.readString())
   }

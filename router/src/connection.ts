@@ -44,8 +44,7 @@ export class Connection {
 
       this.playerSocket.unshift(psData.subarray(buff.packetOffset))
     } catch (e) {
-      console.log('Unshifting')
-
+      console.log(e)
       this.playerSocket.unshift(psData)
     }
   }
@@ -53,15 +52,15 @@ export class Connection {
   handlePacket(psData: Buffer, packet: Packet) {
     switch (this.state) {
       case State.handshaking:
-        console.log('Handshake')
+        console.log('\x1b[34mHandshake\x1b[0m')
         this.handshake(psData, packet)
         break
       case State.status:
-        console.log('Status')
+        console.log('\x1b[34mStatus\x1b[0m')
         this.status(psData, packet)
         break
       case State.login:
-        console.log('Login')
+        console.log('\x1b[34mLogin\x1b[0m')
         this.login(psData, packet)
         break
     }
@@ -78,14 +77,12 @@ export class Connection {
 
     if (!this.connectServerSocket(packet.serverAddress)) return
 
-    console.log(`Connection to ${packet.serverAddress}`)
-
     this.serverSocket.write(psData.subarray(0, packet.totalLength))
   }
 
   status(psData: Buffer, packet: Packet) {
     if (!packet || !(packet instanceof Status)) {
-      console.log('package wasn\'t status request')
+      console.log('\x1b[31mpackage wasn\'t status request\x1b[0m')
       this.closeConnection()
       return
     }
@@ -98,7 +95,7 @@ export class Connection {
 
   login(psData: Buffer, packet: Packet) {
     if (packet && (packet instanceof Login)) {
-      console.log('User:', packet.username)
+      console.log(`\x1b[34mUser: ${packet.username}\x1b[0m`)
     }
 
     this.serverSocket.write(psData.subarray(0, packet.totalLength))
@@ -112,14 +109,14 @@ export class Connection {
       return false
     }
 
-    console.log(`Connecting ${domain} => ${this.proxyRoute.ip}:${this.proxyRoute.port}`)
+    console.log(`\x1b[32mConnecting ${domain} => ${this.proxyRoute.ip}:${this.proxyRoute.port}\x1b[0m`)
 
     this.serverSocket.connect(this.proxyRoute.port, this.proxyRoute.domain)
     return true
   }
 
   bindClientServer() {
-    console.log('Binding Player <--> Server')
+    console.log('\x1b[32mBinding Player <--> Server\x1b[0m')
 
     this.playerSocket.removeAllListeners('data')
     this.playerSocket.pipe(this.serverSocket)
@@ -132,18 +129,19 @@ export class Connection {
     })
 
     this.serverSocket.on('close', () => {
+      console.log('\x1b[33mServer socket closed\x1b[0m')
       this.closeConnection(false)
     })
   }
 
   setupSocketsErrorHandlers() {
     this.playerSocket.on('error', (err) => {
-      console.log(`Error on the client socket: ${err}`)
+      console.log('\x1b[31mError on the client socket:\x1b[0m', err)
       this.closeConnection(false)
     })
 
     this.serverSocket.on('error', (err) => {
-      console.log(`Error on the server socket: ${err}`)
+      console.log('\x1b[31mError on the server socket:\x1b[0m', err)
       this.closeConnection(false)
     })
   }
