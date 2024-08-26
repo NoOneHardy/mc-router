@@ -1,0 +1,24 @@
+{
+  "name": "mc-router",
+  "version": "1.0.0",
+  "description": "Router for minecraft servers according to domains",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NoOneHardy/mc-router.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --fix"
+  },
+  "author": "NoOneHardy",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.1.0",
+    "@types/varint": "^6.0.3",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "varint": "^6.0.0"
+  }
+}
