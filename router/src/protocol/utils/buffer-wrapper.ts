@@ -1,4 +1,4 @@
-import {encode, decode, encodingLength} from 'varint'
+import {decode, encode, encodingLength} from 'varint'
 
 export class BufferWrapper {
   private readonly _buffer: Buffer
@@ -20,24 +20,6 @@ export class BufferWrapper {
 
   readVarInt(): number {
     try {
-      // let value = 0
-      // let byteLength = 0
-      // let currentByte= this._buffer[this._readOffset + byteLength]
-      //
-      // while (!currentByte || (currentByte & 0x80) != 0) {
-      //   currentByte = this._buffer[this._readOffset + byteLength]
-      //   console.log('Byte: ' + currentByte)
-      //   value |= (currentByte & 0x7F) << byteLength
-      //
-      //   byteLength += 7
-      //
-      //   console.log(value)
-      //   if ((currentByte & 0x80) != 0x80) break
-      // }
-      //
-      // this._readOffset += encodingLength(value)
-      //
-      // return value
       const varInt = decode(this._buffer, this._readOffset)
       this._readOffset += encodingLength(varInt)
       return varInt
@@ -48,12 +30,13 @@ export class BufferWrapper {
   }
 
   readString(): string {
-    const stringSize = decode(this._buffer, this._readOffset)
-    this._readOffset += encodingLength(stringSize)
-    return this._buffer.toString('utf-8', this._readOffset, this._readOffset + stringSize)
+    const stringSize = this.readVarInt()
+    const string = this._buffer.toString('utf-8', this._readOffset, this._readOffset + stringSize)
+    this._readOffset += stringSize
+    return string
   }
 
-  readUnsignedInt(): number {
+  readUnsignedShort(): number {
     const short = this._buffer.readUInt16BE(this._readOffset)
     this._readOffset += 2
     return short

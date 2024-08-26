@@ -33,7 +33,7 @@ export class HandshakeBuilder extends PacketBuilder<Handshake> {
     return new Handshake(
       buff.readVarInt(), // Protocol version
       buff.readString(), // Server address
-      buff.readUnsignedInt(), // Port
+      buff.readUnsignedShort(), // Port
       buff.readVarInt() // next state
     )
   }

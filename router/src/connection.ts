@@ -10,8 +10,8 @@ import {Status} from './protocol/packets/server-bound/status.packet'
 import {Login} from './protocol/packets/server-bound/login.packet'
 
 export class Connection {
-  private playerSocket: Socket
-  private serverSocket: Socket
+  private readonly playerSocket: Socket
+  private readonly serverSocket: Socket
 
   private proxyRoute: ProxyRoute
 
@@ -42,7 +42,7 @@ export class Connection {
 
       this.handlePacket(psData, packet)
 
-      this.playerSocket.unshift(psData.slice(buff.packetOffset))
+      this.playerSocket.unshift(psData.subarray(buff.packetOffset))
     } catch (e) {
       console.log('Unshifting')
 
@@ -53,12 +53,15 @@ export class Connection {
   handlePacket(psData: Buffer, packet: Packet) {
     switch (this.state) {
       case State.handshaking:
+        console.log('Handshake')
         this.handshake(psData, packet)
         break
       case State.status:
+        console.log('Status')
         this.status(psData, packet)
         break
       case State.login:
+        console.log('Login')
         this.login(psData, packet)
         break
     }
@@ -72,13 +75,12 @@ export class Connection {
     }
 
     this.state = packet.nextState
-    console.log(this.state)
 
     if (!this.connectServerSocket(packet.serverAddress)) return
 
     console.log(`Connection to ${packet.serverAddress}`)
 
-    this.serverSocket.write(psData.slice(0, packet.totalLength))
+    this.serverSocket.write(psData.subarray(0, packet.totalLength))
   }
 
   status(psData: Buffer, packet: Packet) {
@@ -88,29 +90,25 @@ export class Connection {
       return
     }
 
-    this.serverSocket.write(psData.slice(0, packet.totalLength))
-    this.serverSocket.write(psData.slice(packet.totalLength))
+    this.serverSocket.write(psData.subarray(0, packet.totalLength))
+    this.serverSocket.write(psData.subarray(packet.totalLength))
 
     this.bindClientServer()
   }
 
   login(psData: Buffer, packet: Packet) {
-    if (!packet || !(packet instanceof Login)) {
-      console.log('package wasn\'t login start')
-      this.closeConnection()
-      return
+    if (packet && (packet instanceof Login)) {
+      console.log('User:', packet.username)
     }
 
-    console.log('...')
-    this.serverSocket.write(psData)
-
+    this.serverSocket.write(psData.subarray(0, packet.totalLength))
     this.bindClientServer()
   }
 
   connectServerSocket(domain: string): boolean {
     this.proxyRoute = config.serverList.get(domain)
     if (!this.proxyRoute) {
-      this.closeConnection(`${domain} existiert nicht`)
+      this.closeConnection(true, `${domain} existiert nicht`)
       return false
     }
 
@@ -130,29 +128,29 @@ export class Connection {
 
   setupSocketsCloseHandlers() {
     this.playerSocket.on('close', () => {
-      this.closeConnection()
+      this.closeConnection(false)
     })
 
     this.serverSocket.on('close', () => {
-      this.closeConnection()
+      this.closeConnection(false)
     })
   }
 
   setupSocketsErrorHandlers() {
     this.playerSocket.on('error', (err) => {
       console.log(`Error on the client socket: ${err}`)
-      this.closeConnection()
+      this.closeConnection(false)
     })
 
     this.serverSocket.on('error', (err) => {
       console.log(`Error on the server socket: ${err}`)
-      this.closeConnection()
+      this.closeConnection(false)
     })
   }
 
 
-  closeConnection(errorMessage?: string) {
-    console.log(`Closing connection with ${this.playerSocket.remoteAddress.slice(7)}`)
+  closeConnection(log = true, errorMessage?: string) {
+    if (log) console.log(`Closing connection with ${this.playerSocket.remoteAddress}`)
     if (errorMessage) {
       const disconnectPacket = DisconnectBuilder.error(errorMessage).toBuffer()
       this.playerSocket.write(disconnectPacket)
