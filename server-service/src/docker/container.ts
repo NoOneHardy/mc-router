@@ -2,22 +2,16 @@ import {ApiImpl} from './api-impl'
 import {HostConfig} from './types/container/host-config'
 import {ContainerJson} from './types/container/container-json'
 import {ContainerController} from './container-controller'
-import {ContainerAttachOptions} from './types/container/container-attach-options'
+import {RejectionReason} from './rejection-reason'
 
 export class Container {
   private readonly _id: string
   private _name: string
-  private _image: string
-  private _created: Date
-  private _ports: {
-    IP: string
-    PrivatePort: number
-    PublicPort: number
-    Type: 'tcp' | 'udp' | 'sctp'
-  }[]
-  private _state: string
+  private readonly _image: string
+  private readonly _created: number
+  private readonly _ports: Ports[]
 
-  private _stream?: NodeJS.ReadWriteStream
+  private _stream: NodeJS.ReadWriteStream | null = null
 
   public get id() {
     return this._id
@@ -27,81 +21,56 @@ export class Container {
     return this._name
   }
 
-  private set name(name: string) {
-    if (name.startsWith('/')) this._name = name.slice(1)
-    else this._name = name
-  }
-
   public get image() {
     return this._image
   }
 
-  public get created() {
-    return this._created
+  public get version() {
+    const tag = this.image.split(':')[-1]
+    const version = tag.split('-')[0]
+    if (tag.split('-').length > 1) {
+      return `${version} ${tag.split('-').slice(1).join(' ')}`
+    }
+    return version
+  }
+
+  public get created(): Date {
+    return new Date(this._created)
   }
 
   public get ports() {
     return this._ports
   }
 
-  public get state() {
-    return this._state
+  public get stream() {
+    return this._stream
   }
 
-  private constructor(id: string) {
+  private constructor(
+    id: string,
+    name: string,
+    image: string,
+    created: number,
+    ports: Ports[]
+  ) {
     if (id.length > 12) id = id.slice(0, 12)
     this._id = id
-    console.log(`Created container with id ${this._id}`)
+    this._name = name
+    this._image = image
+    this._created = created
+    this._ports = ports
   }
 
-  public get stream() {
-    return new Promise<NodeJS.ReadWriteStream>((resolve) => {
-      if (!this._stream) {
-        this.attach({
-          stream: true,
-          stdin: true,
-          stdout: true
-        }).then(resolve)
-      } else {
-        console.log('Existing Stream')
-        resolve(this._stream)
-      }
-    })
-  }
-
-  public async start() {
-    return new Promise<true>((resolve, reject) => {
-      const post = ApiImpl.post(`/containers/${this._id}/start`)
-      post.on('response', response => {
-        switch (response.statusCode) {
-          case 204:
-            resolve(true)
-            break
-          default:
-            reject('Not implemented yet') // TODO: implement all possible responses
-        }
-      })
-
-      post.on('error', err => {
-        reject(err)
-      })
-    })
-  }
-
-  public async attach(options: ContainerAttachOptions) {
+  public async attach(): Promise<NodeJS.ReadWriteStream> {
     return new Promise<NodeJS.ReadWriteStream>((resolve, reject) => {
-      if (!options.stream && !options.logs) options.stream = true
+      const params: string[] = [
+        'stdin=true',
+        'stdout=true',
+        'stderr=true',
+        'stream=true'
+      ]
 
-      const params: string[] = []
-
-      if (options.stdin) params.push('stdin=true')
-      if (options.stdout) params.push('stdout=true')
-      if (options.stderr) params.push('stderr=true')
-      if (options.stream) params.push('stream=true')
-      if (options.logs) params.push('logs=true')
-      if (options.detachKeys) params.push(`detachKeys=${options.detachKeys}`)
-
-      const url = `/containers/${this._id}/attach${params.length > 0 ? '?' + params.join('&') : ''}`
+      const url = `/containers/${this.id}/attach${params.length > 0 ? '?' + params.join('&') : ''}`
 
       const reqOptions = {
         headers: {
@@ -128,41 +97,15 @@ export class Container {
     })
   }
 
-  private static createContainerFromJSON(json: ContainerJson): Container {
-    const container = new Container(json.Id)
-
-    container.name = json.Names[0]
-    container._image = json.Image
-    container._created = new Date(json.Created)
-    container._ports = json.Ports
-    container._state = json.State
-
-    ContainerController.saveContainer(container)
-    return container
-  }
-
-  public static async create(name: string, image: string, config?: ContainerConfig): Promise<Container> {
-    return new Promise<Container>((resolve, reject) => {
-      const post = ApiImpl.post(`/containers/create?name=${name}`, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }, {
-        ...config,
-        Image: image
-      })
-
+  public async start(): Promise<true> {
+    return new Promise<true>((resolve, reject) => {
+      const post = ApiImpl.post(`/containers/${this._id}/start`)
       post.on('response', response => {
         switch (response.statusCode) {
-          case 201:
-            response.on('data', raw => {
-              const data: { Id: string, Warnings: string[] } = JSON.parse(raw.toString())
-              for (const warning of data.Warnings) console.warn(warning)
-
-              Container.getInfo(data.Id.slice(0, 12)).then(info => {
-                resolve(Container.createContainerFromJSON(info))
-              })
-            })
+          case 204:
+            this.attach().then(() => {
+              resolve(true)
+            }).catch(e => reject(e))
             break
           default:
             reject('Not implemented yet') // TODO: implement all possible responses
@@ -170,47 +113,13 @@ export class Container {
       })
 
       post.on('error', err => {
-        reject(err.message)
+        reject(err)
       })
     })
   }
 
-  public static async createById(id: string): Promise<Container | null> {
-    return new Promise<Container>((resolve) => {
-      Container.getInfo(id).then((info: ContainerJson | null) => {
-        if (!info) {
-          resolve(null)
-          return
-        }
-        resolve(Container.createContainerFromJSON(info))
-      })
-    })
-  }
-
-  public static async createByName(name: string): Promise<Container | null> {
-    return new Promise<Container>((resolve, reject) => {
-      const request = ApiImpl.get(`/containers/json?all=true&filters={"name":["${name}"]}`)
-
-      request.on('response', response => {
-        switch (response.statusCode) {
-          case 200:
-            response.on('data', raw => {
-              resolve(Container.createContainerFromJSON(JSON.parse(raw)[0]))
-            })
-            break
-          default:
-            reject('Not implemented yet') // TODO: implement all possible responses
-        }
-      })
-
-      request.on('error', err => {
-        reject(err.message)
-      })
-    })
-  }
-
-  public static async getInfo(id: string): Promise<ContainerJson | null> {
-    return new Promise<ContainerJson | null>((resolve, reject) => {
+  public static async getInfo(id: string): Promise<ContainerJson> {
+    return new Promise<ContainerJson>((resolve, reject) => {
       const request = ApiImpl.get(`/containers/json?all=true&filters={"id":["${id}"]}`)
 
       request.on('response', response => {
@@ -222,7 +131,7 @@ export class Container {
                 resolve(JSON.parse(raw)[0])
                 return
               }
-              resolve(null)
+              reject(`No container with id ${id}`)
             })
             break
           default:
@@ -235,6 +144,105 @@ export class Container {
       })
     })
   }
+
+  private static createContainerFromJSON(json: ContainerJson): Container {
+    const container = new Container(json.Id, json.Names[0], json.Image, json.Created, json.Ports)
+
+    ContainerController.saveContainer(container)
+    return container
+  }
+
+  public static async create(name: string, image: string, config?: ContainerConfig): Promise<Container> {
+    return new Promise<Container>((resolve, reject) => {
+      const post = ApiImpl.post(`/containers/create?name=${name}`, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }, {
+          ...config,
+          Image: 'docker.no1hardy.ch/minecraft-server:' + image
+        })
+
+      post.on('response', response => {
+        switch (response.statusCode) {
+          case 201:
+            response.on('data', (raw: string) => {
+              const data: { Id: string, Warnings: string[] } = JSON.parse(raw)
+
+              Container.getInfo(data.Id.slice(0, 12)).then(info => {
+                resolve(Container.createContainerFromJSON(info))
+                return
+              })
+            })
+            break
+          case 400:
+            response.on('data', (raw: string) => {
+              const data: {message: string} = JSON.parse(raw)
+              reject({
+                reason: RejectionReason.BAD_PARAMETER,
+                message: data.message
+              })
+              return
+            })
+            break
+          case 404:
+            response.on('data', (raw: string) => {
+              const data: {message: string} = JSON.parse(raw)
+              reject({
+                reason: RejectionReason.NO_SUCH_IMAGE,
+                message: data.message
+              })
+              return
+            })
+            break
+          case 409:
+            response.on('data', (raw: string) => {
+              const data: {message: string} = JSON.parse(raw)
+              reject({
+                reason: RejectionReason.CONFLICT,
+                message: data.message
+              })
+              return
+            })
+            break
+          case 500:
+            response.on('data', (raw: string) => {
+              const data: {message: string} = JSON.parse(raw)
+              reject({
+                reason: RejectionReason.SERVER_ERROR,
+                message: data.message
+              })
+              return
+            })
+            break
+          default:
+            reject('Not implemented yet') // TODO: implement response codes
+            return
+        }
+      })
+
+      post.on('error', err => {
+        reject(err.message)
+      })
+    })
+  }
+
+  public static async createFromId(id: string): Promise<Container> {
+    return new Promise<Container>((resolve, reject) => {
+      Container.getInfo(id).then(info => {
+        resolve(Container.createContainerFromJSON(info))
+      }).catch(e => {
+        reject(e)
+      })
+    })
+  }
+}
+
+interface Ports {
+  IP: string
+  PrivatePort: number
+  PublicPort: number
+  Type: 'tcp' | 'udp' | 'sctp'
 }
 
 export interface ContainerConfig {
